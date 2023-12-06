@@ -16,7 +16,7 @@ static void die(const char *message) {
 
 struct run_args {
   struct timespec *start;
-  char *const program;
+  char ** program_argv;
   char *const input;
 };
 
@@ -28,16 +28,15 @@ static int run_impl(void *a) {
   const int new_stdin = dup2(input, STDIN_FILENO);
   if (new_stdin == -1) die("dup2");
   // Start the timer and execute the program.
-  char *argv[] = {args->program, NULL};
   clock_gettime(CLOCK_MONOTONIC, args->start);
-  execv(argv[0], argv);
+  execv(args->program_argv[0], args->program_argv);
   die("execv");
 }
 static char run_stack[4096];
 
 // Runs the given program, passing the contents of the given input file to
 // stdin, and returns the total execution time in microseconds.
-static int run(char *program, char *input) {
+static int run(char *input, char **program_argv) {
   // We will call `clone` to start a new thread, and then use `execve` to start
   // the program from that thread. The timer is started from the new thread,
   // immediately before invoking `execve`, to avoid counting the thread
@@ -45,7 +44,7 @@ static int run(char *program, char *input) {
   struct timespec start, end;
   struct run_args args = {
       .start = &start,  // The start time will be recorded by run_impl.
-      .program = program,
+      .program_argv = program_argv,
       .input = input,
   };
   const int pid =
@@ -67,18 +66,18 @@ static int run(char *program, char *input) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 3) {
-    fprintf(stderr, "Usage: microtime <program> <input>\n");
+  if (argc < 3) {
+    fprintf(stderr, "Usage: microtime <input> <program> <args>\n");
     return 1;
   }
-  char *const program = argv[1];
-  char *const input = argv[2];
+  char *const input = argv[1];
+  char **program_argv = argv + 2;
   // Run for 500ms.
   int runs = 0;
   int64_t sum = 0;
   int64_t sum_squares = 0;
   while (sum < 500000) {
-    const int64_t time = run(program, input);
+    const int64_t time = run(input, program_argv);
     sum += time;
     sum_squares += time * time;
     runs++;

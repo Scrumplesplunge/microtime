@@ -2,20 +2,15 @@
 
 `microtime` is a tool for timing programs with execution times below a few ms.
 
-Microtime takes two arguments:
-
-  * The program to execute.
-  * A file that should be passed to stdin.
-
 Microtime will execute the program repeatedly until it has seen a total of at
 least 500ms of execution time, after which point it will exit and print
 a summary:
 
     # Start some background work to make sure the cpu frequency is maxed out.
     $ dd if=/dev/zero of=/dev/null &
-    $ time myprogram <myinput.txt
+    $ time myprogram arg1 arg2 <myinput.txt
     myprogram < myinput.txt  0.00s user 0.00s system 42% cpu 0.001 total
-    $ microtime myprogram myinput.txt
+    $ microtime myinput.txt myprogram arg1 arg2
     Ran 789 times, mean 456us, stddev 123us
 
 The advantages of using microtime instead of simply using `time` in your
